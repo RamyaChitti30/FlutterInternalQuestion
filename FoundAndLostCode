@@ -1,0 +1,213 @@
+import 'package:flutter/material.dart';
+
+void main() => runApp(const MyApp());
+
+List<Map<String, String>> reports = [];
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false,
+    title: 'Campus Lost & Found',
+    theme: ThemeData(
+      colorSchemeSeed: Colors.indigo,
+      useMaterial3: true,
+    ),
+    home: const HomePage(),
+  );
+}
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final formKey = GlobalKey<FormState>();
+  final name = TextEditingController();
+  final location = TextEditingController();
+  final description = TextEditingController();
+
+  String? category;
+  String status = 'Lost';
+
+  void submit() {
+    if (!formKey.currentState!.validate()) return;
+
+    setState(() {
+      reports.add({
+        'name': name.text.trim(),
+        'category': category!,
+        'location': location.text.trim(),
+        'description': description.text.trim(),
+        'status': status,
+      });
+    });
+
+    name.clear();
+    location.clear();
+    description.clear();
+    category = null;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Report submitted successfully!')),
+    );
+  }
+
+  @override
+  void dispose() {
+    name.dispose();
+    location.dispose();
+    description.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Campus Lost & Found')),
+    body: ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Text('Report an Item',
+            style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 15),
+
+        Form(
+          key: formKey,
+          child: Column(children: [
+            DropdownButtonFormField<String>(
+              decoration: const InputDecoration(
+                labelText: 'Report Type',
+                border: OutlineInputBorder(),
+              ),
+              value: status,
+              items: ['Lost', 'Found']
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .toList(),
+              onChanged: (v) => setState(() => status = v!),
+            ),
+            const SizedBox(height: 12),
+
+            TextFormField(
+              controller: name,
+              decoration: const InputDecoration(
+                labelText: 'Item Name',
+                border: OutlineInputBorder(),
+              ),
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Enter item name' : null,
+            ),
+            const SizedBox(height: 12),
+
+            DropdownButtonFormField<String>(
+              decoration: const InputDecoration(
+                labelText: 'Category',
+                border: OutlineInputBorder(),
+              ),
+              items: ['Electronics', 'Books', 'ID Cards', 'Bags', 'Keys', 'Other']
+                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                  .toList(),
+              onChanged: (v) => category = v,
+              validator: (v) => v == null ? 'Select category' : null,
+            ),
+            const SizedBox(height: 12),
+
+            TextFormField(
+              controller: location,
+              decoration: const InputDecoration(
+                labelText: 'Campus Location',
+                border: OutlineInputBorder(),
+              ),
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Enter location' : null,
+            ),
+            const SizedBox(height: 12),
+
+            TextFormField(
+              controller: description,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                border: OutlineInputBorder(),
+              ),
+              validator: (v) => v == null || v.trim().length < 5
+                  ? 'Enter at least 5 characters'
+                  : null,
+            ),
+            const SizedBox(height: 15),
+
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: submit,
+                child: const Text('Submit Report'),
+              ),
+            ),
+          ]),
+        ),
+
+        const Divider(height: 35),
+
+        const Text('Submitted Reports',
+            style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold)),
+
+        ...reports.map((item) => ReportCard(item: item)),
+      ],
+    ),
+  );
+}
+
+// Custom report widget
+class ReportCard extends StatelessWidget {
+  final Map<String, String> item;
+  const ReportCard({super.key, required this.item});
+
+  @override
+  Widget build(BuildContext context) => Card(
+    margin: const EdgeInsets.symmetric(vertical: 7),
+    child: ListTile(
+      leading: const Icon(Icons.inventory_2, color: Colors.indigo),
+      title: Text(item['name']!),
+      subtitle: Text('${item['status']} • ${item['location']}'),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DetailsPage(item: item),
+        ),
+      ),
+    ),
+  );
+}
+
+// Separate item details screen
+class DetailsPage extends StatelessWidget {
+  final Map<String, String> item;
+  const DetailsPage({super.key, required this.item});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Item Details')),
+    body: Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.inventory_2, size: 65, color: Colors.indigo),
+          const SizedBox(height: 20),
+          ...item.entries.map((e) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              '${e.key.toUpperCase()}: ${e.value}',
+              style: const TextStyle(fontSize: 17),
+            ),
+          )),
+        ],
+      ),
+    ),
+  );
+}
